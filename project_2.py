@@ -123,7 +123,7 @@ print("-----------------------------------------------")
 # secret number generation
 secret_number = secret_number_generation()
 
-print("required SN: ", secret_number)  # TODO REMOVE ME in PROD release!
+# print("required SN: ", secret_number)  # TODO REMOVE ME in PROD release!
 
 # main part - game
 game_over: bool = False  # flag the SN and user's guess matach
