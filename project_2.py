@@ -6,8 +6,20 @@ author: Martin Alex Urbiš
 email: urbis.martin@gmail.com
 discord: segen0
 """
-from random import randrange
-from collections import Counter
+
+""" change log
+
+* 03-11-2024 *
+1) a different method was used to generate the random number
+2) because of 1) the def 'secret_number_validation' was canceled
+3) def 'check_guess_no_duplicity' - modified
+4) def 'def bull_evaluation' - replaced  by def 'score_evaluation'
+5) def 'def cow_evaluation' - replaced  by def 'score_evaluation'
+6) the business logic of comparison SN and user's guess reworked
+
+"""
+
+import random
 
 # variable declaration
 secret_number: str  # secret 4-digit number
@@ -15,6 +27,8 @@ users_guess: str  # user's tip
 secret_number_valid: bool = False  # SN is valid and game can begin
 users_guess_valid: bool = False  # user's guess is valid for matching with SN
 results_of_validation: list = list()  # individual results of validations
+bull: int = 0  # number of bull's guesses
+cow: int = 0  # number of cow's guesse
 
 
 def secret_number_generation() -> str:
@@ -23,28 +37,11 @@ def secret_number_generation() -> str:
     - no duplicity digits
     - without leading zero
     """
-    random_component: int = 0  # random component for secret number
-    sn_output: str = ""  # secret number components / output
+    sn_components = random.sample(range(0, 10), 5)
+    conv_list = int("".join(map(str, sn_components)))
+    conv_str = str(conv_list)
 
-    for num in range(1, 5):
-        random_component = randrange(10)
-        while num == 1 and random_component == 0:
-            random_component = randrange(10)
-        else:
-            sn_output = sn_output + str(random_component)
-
-    return sn_output
-
-
-# secret number validation functions
-def secret_number_validation(sec_num: str) -> bool:
-    """check secret number individual component uniqueness"""
-    freq = Counter(sec_num)
-
-    if len(freq) == len(sec_num):
-        return True
-    else:
-        return False
+    return conv_str[:4]
 
 
 # user guess validation functions
@@ -66,12 +63,15 @@ def check_guess_is_number(input: str) -> str:
 
 def check_guess_no_duplicity(input: str) -> str:
     """check individual component uniqueness"""
-    freq = Counter(input)
-
-    if len(freq) == len(input):
-        return "1"
+    if len(input) == 4:
+        if len(set(input)) == 4:
+            return "1"
+        else:
+            return "- there must be no duplicate digits in the number."
     else:
-        return "- there must be no duplicate digits in the number."
+        # length does not meet with required value (4) but still evaluated like o.k.
+        # because length is already evaluated in def 'check_length_user_guess'
+        return "1"
 
 
 def check_guess_has_leading_zero(input: str) -> str:
@@ -83,20 +83,21 @@ def check_guess_has_leading_zero(input: str) -> str:
 
 
 # evaluations and game over output functions
-def bull_evaluation(input: int) -> str:
-    """evaluation for bull result"""
-    if input == 1:
-        return str(bull_score) + " bull"
-    else:
-        return str(bull_score) + " bulls"
+def score_evaluation(bull: int, cow: int) -> list:
+    """cows / bulls evaluation"""
+    bulls: str
+    cows: str
 
-
-def cow_evaluation(input: int):
-    """evaluation for cow result"""
-    if cow_score == 1:
-        return str(cow_score) + " cow"
+    if bull == 1:
+        bulls = str(bull) + " bull"
     else:
-        return str(cow_score) + " cows"
+        bulls = str(bull) + " bulls"
+    if cow == 1:
+        cows = str(cow) + " cow"
+    else:
+        cows = str(cow) + " cows"
+
+    return [bulls, cows]
 
 
 def game_over_output(input: int) -> str:
@@ -120,11 +121,9 @@ print(
 print("-----------------------------------------------")
 
 # secret number generation
-while secret_number_valid is not True:
-    secret_number = secret_number_generation()
-    secret_number_valid = secret_number_validation(secret_number)
+secret_number = secret_number_generation()
 
-# print("required SN: ", secret_number)  # TODO REMOVE ME in PROD release!
+print("required SN: ", secret_number)  # TODO REMOVE ME in PROD release!
 
 # main part - game
 game_over: bool = False  # flag the SN and user's guess matach
@@ -167,45 +166,23 @@ while game_over is not True:
         else:
             # user's input is valid
             results_of_validation.clear()
-            pass_input_validation = 0
             break
 
     # comparison SN and user's guess
-    char_position: int = 0  # positon of element in the list (SN)
-    bull_score: int = 0  # number of bull's guesses
-    cow_score: int = 0  # number of cow's guesse
-    cow_values: str = ""  # values for cow evaluation
-    bulls_result: str = ""
-    cows_result: str = ""
-
-    # bulls evaluation
     number_of_guesses = number_of_guesses + 1
-    for char in secret_number:
-        if char == users_guess[char_position]:
-            # the bright bulls
-            bull_score = bull_score + 1
-            char_position = char_position + 1
-        else:
-            # cow candidates
-            cow_values = cow_values + users_guess[char_position]
-            char_position = char_position + 1
 
-    # cows evaluation (based on cow candidates)
-    for char in cow_values:
-        if secret_number.count(char) > 0:
-            cow_score = cow_score + 1
-
-    if bull_score == 4:
-        game_over = True
-    else:
-        bulls_result = bull_evaluation(bull_score)
-        cows_result = cow_evaluation(cow_score)
-
-        print(f"{bulls_result}, {cows_result}")
-        bull_score = 0
-        cow_score = 0
+    for i in range(0, 4):
+        for letter in enumerate(users_guess):
+            if (i == letter[0]) and (secret_number[i] == letter[1]):
+                bull = bull + 1
+            elif secret_number[i] == letter[1]:
+                cow = cow + 1
 
     if users_guess != secret_number:
+        result_evaluation: list = score_evaluation(bull, cow)
+        print(result_evaluation[0], result_evaluation[1])
+        bull = 0
+        cow = 0
         print("\nYours guess does not match, next turn ...\n")
 
     else:
